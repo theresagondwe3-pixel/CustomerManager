@@ -1,60 +1,78 @@
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.geometry.Insets;
 import javafx.stage.Stage;
 
+/**
+ * Main window of the Customer Manager application.
+ * Displays customers in a table and lets the user add and delete them.
+ */
 public class CustomerManagerApp extends Application {
 
-    public static class Customer {
-        private String name;
-        private String province;
-        public Customer(String n, String p){ name=n; province=p; }
-        public String getName(){ return name; }
-        public String getProvince(){ return province; }
-    }
+    private static final String DELETE_BUTTON_STYLE =
+            "-fx-background-color: red; -fx-text-fill: white; -fx-font-weight: bold;";
 
+    /** The ten provinces of Zambia, shown in the drop-down list. */
+    private static final String[] PROVINCES = {
+            "Central", "Copperbelt", "Eastern", "Luapula", "Lusaka",
+            "Muchinga", "Northern", "North-Western", "Southern", "Western"
+    };
+
+    /**
+     * Builds the user interface and shows the main window.
+     *
+     * @param stage the primary stage provided by JavaFX
+     */
     @Override
     public void start(Stage stage) {
+        // Input controls
         TextField nameField = new TextField();
         nameField.setPromptText("Name");
-        TextField provinceField = new TextField();
-        provinceField.setPromptText("Province");
+        ComboBox<String> provinceBox = new ComboBox<>(
+                FXCollections.observableArrayList(PROVINCES));
+        provinceBox.setPromptText("Select Province");
 
-        TableView<Customer> table = new TableView<>();
+        // Data
         ObservableList<Customer> data = FXCollections.observableArrayList(
-                new Customer("Chipo Banda","Lusaka"),
-                new Customer("John Smith","Copperbelt"),
-                new Customer("Aisha Zulu","Southern"),
-                new Customer("Theresa gondwe","Kitwe")
+                new Customer("Chipo Banda", "Lusaka"),
+                new Customer("John Smith", "Copperbelt"),
+                new Customer("Aisha Zulu", "Southern"),
+                new Customer("Theresa Gondwe", "Copperbelt")
         );
 
-        TableColumn<Customer,String> c1 = new TableColumn<>("Name");
-        c1.setCellValueFactory(new PropertyValueFactory<>("name"));
-        TableColumn<Customer,String> c2 = new TableColumn<>("Province");
-        c2.setCellValueFactory(new PropertyValueFactory<>("province"));
-        table.getColumns().addAll(c1,c2);
+        // Table
+        TableView<Customer> table = new TableView<>();
+        TableColumn<Customer, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        TableColumn<Customer, String> provinceCol = new TableColumn<>("Province");
+        provinceCol.setCellValueFactory(new PropertyValueFactory<>("province"));
+        table.getColumns().addAll(nameCol, provinceCol);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(data);
 
+        // Buttons
         Button addBtn = new Button("Add Customer");
-        Button deleteBtn = new Button("DELETE SELECTED");
-        deleteBtn.setStyle("-fx-background-color: red; -fx-text-fill: white; -fx-font-weight: bold;");
+        Button deleteBtn = new Button("Delete Selected");
+        deleteBtn.setStyle(DELETE_BUTTON_STYLE);
+        deleteBtn.disableProperty().bind(
+                table.getSelectionModel().selectedItemProperty().isNull());
 
-        addBtn.setOnAction(e -> {
-            if(!nameField.getText().isEmpty()){
-                data.add(new Customer(nameField.getText(), provinceField.getText()));
-                nameField.clear(); provinceField.clear();
-            }
-        });
-
+        // Actions
+        addBtn.setOnAction(e -> CustomerAdd.addCustomer(nameField, provinceBox, data));
         deleteBtn.setOnAction(e -> CustomerDelete.deleteCustomer(table, data));
 
-        HBox inputBox = new HBox(10, nameField, provinceField, addBtn);
+        // Layout
+        HBox inputBox = new HBox(10, nameField, provinceBox, addBtn);
         VBox root = new VBox(15, table, inputBox, deleteBtn);
         root.setPadding(new Insets(15));
 
@@ -62,5 +80,13 @@ public class CustomerManagerApp extends Application {
         stage.setTitle("Customer Manager - Lusaka");
         stage.show();
     }
-    public static void main(String[] args){ launch(); }
+
+    /**
+     * Application entry point.
+     *
+     * @param args command-line arguments (not used)
+     */
+    public static void main(String[] args) {
+        launch();
+    }
 }
